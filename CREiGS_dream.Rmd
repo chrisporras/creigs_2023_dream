@@ -113,6 +113,54 @@ fitDupCor <- lmFit(vobj, design, block = metadata$Individual, correlation = dupc
 fitDupCor <- eBayes(fitDupCor)
 ```
 
+## variancePartition plot
+Dream and variancePartition share the same underlying linear mixed model framework. A variancePartition analysis can indicate important variables that should be included as fixed or random effects in the dream analysis. 
+```{r vp}
+# Note: this could be run with either vobj from voom()
+# or vobjDream from voomWithDreamWeights()
+# The resuylts are similar
+form <- ~ (1 | Individual) + (1 | Disease) + (1|Sex) + (1|DiseaseSubtype)
+vp <- fitExtractVarPartModel(vobj, form, metadata)
+
+plotVarPart(sortCols(vp))
+```
+
+```{r}
+# Figure 1a
+# Bar plot of variance fractions for the first 10 genes
+plotPercentBars(vp[1:10, ])
+```
+```{r vp}
+# Note: this could be run with either vobj from voom()
+# or vobjDream from voomWithDreamWeights()
+# The resuylts are similar
+form <- ~ (1 | Individual) + (1|Sex) + (1|DiseaseSubtype)
+vp <- fitExtractVarPartModel(vobj, form, metadata)
+
+plotVarPart(sortCols(vp))
+```
+
+```{r}
+# Figure 1a
+# Bar plot of variance fractions for the first 10 genes
+plotPercentBars(vp[1:10, ])
+```
+```{r vp}
+# Note: this could be run with either vobj from voom()
+# or vobjDream from voomWithDreamWeights()
+# The resuylts are similar
+form <- ~ (1 | Individual) + (1 | Disease)
+vp <- fitExtractVarPartModel(vobj, form, metadata)
+
+plotVarPart(sortCols(vp))
+```
+
+```{r}
+# Figure 1a
+# Bar plot of variance fractions for the first 10 genes
+plotPercentBars(vp[1:10, ])
+```
+
 # Dream Analysis
 The dream method replaces 4 core functions of limma with a linear mixed model.
 
@@ -258,22 +306,7 @@ volcanoplot(fitmmKR, coef = c("DiseaseSubtype2", "DiseaseSubtype1"),
 ```
 
 
-## variancePartition plot
-Dream and variancePartition share the same underlying linear mixed model framework. A variancePartition analysis can indicate important variables that should be included as fixed or random effects in the dream analysis. 
-```{r vp}
-# Note: this could be run with either vobj from voom()
-# or vobjDream from voomWithDreamWeights()
-# The resuylts are similar
-form <- ~ (1 | Individual) + (1 | Disease)
-vp <- fitExtractVarPartModel(vobj, form, metadata)
 
-plotVarPart(sortCols(vp))
-```
-```{r}
-# Figure 1a
-# Bar plot of variance fractions for the first 10 genes
-plotPercentBars(vp[1:10, ])
-```
 
 ## Comparing p-values 
 Here we compare p-values from from `dream()` and `duplicateCorrelation`. In order to understand the empircal difference between them, we can plot the $-\log_{10}$ p-values from each method.
