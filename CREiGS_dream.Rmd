@@ -27,53 +27,7 @@ body {
 text-align: justify}
 </style>
 
-
-<!---
-# Description
-Dream uses a linear model model to increase power and decrease false positives for RNA-seq datasets with repeated measurements.  Dream achieves this by combining multiple statistical concepts into a single statistical model.  The dream model includes:     
-
-```{r kable, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
-library("pander")
-tab <- rbind(
-  c("precision weights to model measurement error in RNA-seq counts", "limma/voom", "@Law2014"),
-  c("ability to model multiple random effects", "lme4", "@Bates2015"),
-  c("random effects estimated separately for each gene", "variancePartition", "@hoffman2016"),
-  c("hypothesis testing for fixed effects in linear mixed models", "lmerTest", "Kuznetsova, et al. -@kuznetsova2017"),
-  c("small sample size hypothesis test", "pbkrtest", "Halekoh, et al. -@halekoh2014"),
-  # c('emprical Bayes moderated t-test', 'limma/eBayes', '@smyth2004'),
-  c("", "", "")
-)
-colnames(tab) <- c("Model property", "Package", "Reference")
-
-panderOptions("table.split.table", Inf)
-panderOptions("table.alignment.default", "left")
-
-pander(tab, style = "rmarkdown")
-```
-* flexible modeling of repeated measures gene expression data
-* precision weights to model measurement error in RNA-seq counts
-* ability to model multiple random effects
-* random effects estimated separately for each gene
-* hypothesis testing for fixed effects in linear mixed models
-* small sample size hypothesis test
-* multi-threaded analysis across thousands of genes on a multi-core machine.
---->
-
-**D**ifferential expression for **re**pe**a**ted **m**easures (dream) uses a linear model model to increase power and decrease false positives for RNA-seq datasets with multiple measurements per individual.  The analysis fits seamlessly into the widely used workflow of limma/voom [@Law2014].  Dream uses a linear model model to increase power and decrease false positives for RNA-seq datasets with repeated measurements.  Dream achieves this by combining multiple statistical concepts into a single statistical model.  The model includes: 
-
-  - flexible modeling of repeated measures gene expression data<br> 
-  - precision weights to model measurement error in RNA-seq counts<br> 
-  - ability to model multiple random effects<br>
-  - random effects estimated separately for each gene<br>
-  - hypothesis testing for fixed effects in linear mixed models<br>
-  - small sample size hypothesis test<br>
-  
-  Dream also includes multi-threaded analysis across thousands of genes on a multi-core machine.
-
-
-
-# Standard RNA-seq processing
-This tutorial assumes that the reader is familiar with the limma/voom workflow for RNA-seq.  Process raw count data using limma/voom. 
+# install packages
 ```{r}
 working_dir <- "~/../Desktop/creigs_ta_2023-main/creigs_dream_analysis/"
 
@@ -100,6 +54,23 @@ if (!require("statmod", quietly = TRUE)){
 }
 
 ```
+
+
+**D**ifferential expression for **re**pe**a**ted **m**easures (dream) uses a linear model model to increase power and decrease false positives for RNA-seq datasets with multiple measurements per individual.  The analysis fits seamlessly into the widely used workflow of limma/voom [@Law2014].  Dream uses a linear model model to increase power and decrease false positives for RNA-seq datasets with repeated measurements.  Dream achieves this by combining multiple statistical concepts into a single statistical model.  The model includes: 
+
+  - flexible modeling of repeated measures gene expression data<br> 
+  - precision weights to model measurement error in RNA-seq counts<br> 
+  - ability to model multiple random effects<br>
+  - random effects estimated separately for each gene<br>
+  - hypothesis testing for fixed effects in linear mixed models<br>
+  - small sample size hypothesis test<br>
+  
+  Dream also includes multi-threaded analysis across thousands of genes on a multi-core machine.
+
+
+
+# Standard RNA-seq processing
+This tutorial assumes that the reader is familiar with the limma/voom workflow for RNA-seq.  Process raw count data using limma/voom. 
 
 ```{r preprocess, eval=TRUE, results='hide'}
 library("variancePartition")
@@ -213,6 +184,16 @@ colnames(fit)
 topTable(fit, coef = "compare2_1", number = 3)
 ```
 
+```{r}
+splitname <- strsplit(rownames(fit$coefficients), "gene=")
+gene_names <- sapply(splitname, function(x) x[[2]])
+
+volcanoplot(fit, coef="compare2_1", 
+            highlight = 5, hl.col = "red",
+            names = gene_names)
+```
+
+
 ### Comparing multiple coefficients
 
 So far contrasts have only involved the difference between two coefficients.  But contrasts can also compare any linear combination of coefficients.  Here, consider comparing `DiseaseSubtype0` to the mean of `DiseaseSubtype1` and `DiseaseSubtype2`. Note you can also customize the name of the contrast.
@@ -232,6 +213,16 @@ fit <- eBayes(fit)
 topTable(fit, coef = "Test1", number = 3)
 ```
 
+```{r}
+splitname <- strsplit(rownames(fit$coefficients), "gene=")
+gene_names <- sapply(splitname, function(x) x[[2]])
+
+volcanoplot(fit, coef = "Test1", 
+            highlight = 5, hl.col = "red",
+            names = gene_names)
+```
+
+
 ### Joint hypothesis test of multiple coefficients
 Joint hypothesis testing of multiple coefficients at the same time can be performed by using an F-test.  Just like in limma, the results can be extracted using `topTable()`
 
@@ -241,6 +232,14 @@ topTable(fit, coef = c("DiseaseSubtype2", "DiseaseSubtype1"), number = 3)
 ```
 Since dream uses an estimated degrees of freedom value for each hypothsis test, the degrees of freedom is different for each gene here.  Therefore, the F-statistics are not directly comparable since they have different degrees of freedom.  In order to be able to compare test statistics, we report `F.std` which is the p-value transformed into an F-statistic with $df_1$ the number of coefficients tested and $df_2=\infty$.  This can be used for downstream analysis.
 
+```{r}
+splitname <- strsplit(rownames(fit$coefficients), "gene=")
+gene_names <- sapply(splitname, function(x) x[[2]])
+
+volcanoplot(fit, coef = c("DiseaseSubtype2", "DiseaseSubtype1"), 
+            highlight = 5, hl.col = "red",
+            names = gene_names)
+```
 
 ## Small-sample method
 For small datasets, the Kenward-Roger method can be more powerful.  But it is **substantially** more computationally intensive.
@@ -248,6 +247,16 @@ For small datasets, the Kenward-Roger method can be more powerful.  But it is **
 fitmmKR <- dream(vobjDream, form, metadata, ddf = "Kenward-Roger")
 fitmmKR <- eBayes(fitmmKR)
 ```
+
+```{r}
+splitname <- strsplit(rownames(fitmmKR$coefficients), "gene=")
+gene_names <- sapply(splitname, function(x) x[[2]])
+
+volcanoplot(fitmmKR, coef = c("DiseaseSubtype2", "DiseaseSubtype1"), 
+            highlight = 5, hl.col = "red",
+            names = gene_names)
+```
+
 
 ## variancePartition plot
 Dream and variancePartition share the same underlying linear mixed model framework. A variancePartition analysis can indicate important variables that should be included as fixed or random effects in the dream analysis. 
@@ -259,6 +268,11 @@ form <- ~ (1 | Individual) + (1 | Disease)
 vp <- fitExtractVarPartModel(vobj, form, metadata)
 
 plotVarPart(sortCols(vp))
+```
+```{r}
+# Figure 1a
+# Bar plot of variance fractions for the first 10 genes
+plotPercentBars(vp[1:10, ])
 ```
 
 ## Comparing p-values 
